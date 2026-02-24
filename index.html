@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dawdle — Room Prototype</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="panel sidebar" aria-label="Rooms and friends">
+        <header class="panel-header">
+          <h1>Dawdle</h1>
+          <p>music rooms</p>
+        </header>
+
+        <section class="section" aria-label="Rooms">
+          <div class="section-title-row">
+            <h2>Rooms</h2>
+          </div>
+          <ul id="room-list" class="list"></ul>
+        </section>
+
+        <section class="section" aria-label="Friends">
+          <div class="section-title-row">
+            <h2>Friends online</h2>
+          </div>
+          <ul id="friend-list" class="list compact"></ul>
+        </section>
+      </aside>
+
+      <main class="panel player" aria-label="Current track and controls">
+        <header class="player-header">
+          <p class="eyebrow">Now playing</p>
+          <div class="role-toggle">
+            <span id="role-label">Listener</span>
+            <button id="toggle-dj" type="button" aria-pressed="false">Become DJ</button>
+          </div>
+        </header>
+
+        <section class="track-card">
+          <p id="room-name" class="room-name"></p>
+          <h2 id="track-title"></h2>
+          <p id="track-meta" class="track-meta"></p>
+
+          <div class="vote-row">
+            <button id="like-btn" class="vote like" type="button">👍 Like</button>
+            <button id="dislike-btn" class="vote dislike" type="button">👎 Skip</button>
+          </div>
+
+          <div class="metrics">
+            <p><strong id="listeners-count">0</strong> listeners</p>
+            <p><strong id="likes-count">0</strong> likes</p>
+            <p><strong id="dislikes-count">0</strong> skips</p>
+          </div>
+        </section>
+
+        <section class="dj-panel" id="dj-panel" aria-label="DJ controls" hidden>
+          <h3>DJ controls</h3>
+          <p>Queue the next mock track in this room.</p>
+          <button id="next-track" type="button">Play next track</button>
+        </section>
+      </main>
+
+      <aside class="panel chat" aria-label="Emoji chat panel">
+        <header class="panel-header">
+          <h2>Emoji chat</h2>
+          <p>Room reactions</p>
+        </header>
+
+        <ul id="chat-log" class="chat-log" aria-live="polite"></ul>
+
+        <form id="chat-form" class="chat-form">
+          <label for="emoji-input" class="sr-only">Send emoji</label>
+          <input
+            id="emoji-input"
+            type="text"
+            maxlength="6"
+            inputmode="text"
+            placeholder="Drop an emoji"
+            required
+          />
+          <button type="submit">Send</button>
+        </form>
+      </aside>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
