@@ -64,6 +64,28 @@ const chatLog = document.getElementById('chat-log');
 const chatForm = document.getElementById('chat-form');
 const emojiInput = document.getElementById('emoji-input');
 
+const chatPanel = document.getElementById('chat-panel');
+const chatDrawerToggle = document.getElementById('chat-drawer-toggle');
+const chatClose = document.getElementById('chat-close');
+const chatBackdrop = document.getElementById('chat-backdrop');
+
+function isSmallScreen() {
+  return window.matchMedia('(max-width: 760px)').matches;
+}
+
+function setChatDrawer(open) {
+  if (!isSmallScreen()) {
+    document.body.classList.remove('chat-open');
+    chatBackdrop.hidden = true;
+    chatDrawerToggle?.setAttribute('aria-expanded', 'false');
+    return;
+  }
+
+  document.body.classList.toggle('chat-open', open);
+  chatBackdrop.hidden = !open;
+  chatDrawerToggle?.setAttribute('aria-expanded', String(open));
+}
+
 function getActiveRoom() {
   return appState.rooms.find((room) => room.id === appState.activeRoomId);
 }
@@ -187,3 +209,29 @@ chatForm.addEventListener('submit', (event) => {
 });
 
 render();
+
+
+chatDrawerToggle?.addEventListener('click', () => {
+  const isOpen = document.body.classList.contains('chat-open');
+  setChatDrawer(!isOpen);
+});
+
+chatClose?.addEventListener('click', () => {
+  setChatDrawer(false);
+});
+
+chatBackdrop?.addEventListener('click', () => {
+  setChatDrawer(false);
+});
+
+window.addEventListener('resize', () => {
+  if (!isSmallScreen()) {
+    setChatDrawer(false);
+  }
+});
+
+chatPanel?.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') {
+    setChatDrawer(false);
+  }
+});
