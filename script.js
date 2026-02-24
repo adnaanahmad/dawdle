@@ -6,41 +6,41 @@ const appState = {
       id: 'room-1',
       name: 'Late Night Synths',
       listeners: 24,
-      likes: 12,
-      dislikes: 2,
       chat: ['🪩', '✨', '🌙'],
-      tracks: [
-        { title: 'Neon Skyline', artist: 'Cloud Arcade', duration: '3:47' },
-        { title: 'Signals in Rain', artist: 'Lux Pilot', duration: '4:02' },
-        { title: 'Static Hearts', artist: 'Polaroid Drive', duration: '3:36' }
+      fallbackTracks: [
+        { title: 'Neon Skyline', artist: 'Cloud Arcade', duration: '3:47', videoId: 'ktvTqknDobU' },
+        { title: 'Signals in Rain', artist: 'Lux Pilot', duration: '4:02', videoId: '2Vv-BfVoq4g' },
+        { title: 'Static Hearts', artist: 'Polaroid Drive', duration: '3:36', videoId: 'JGwWNGJdvx8' }
       ],
-      trackIndex: 0
+      fallbackIndex: 0,
+      queue: [],
+      nowPlaying: null
     },
     {
       id: 'room-2',
       name: 'Coffeehouse Sunday',
       listeners: 11,
-      likes: 5,
-      dislikes: 1,
       chat: ['☕', '🎧', '🤎'],
-      tracks: [
-        { title: 'Paper Cup Lullaby', artist: 'Ivy North', duration: '2:54' },
-        { title: 'Porchlight', artist: 'Fable Oaks', duration: '3:21' }
+      fallbackTracks: [
+        { title: 'Paper Cup Lullaby', artist: 'Ivy North', duration: '2:54', videoId: 'kJQP7kiw5Fk' },
+        { title: 'Porchlight', artist: 'Fable Oaks', duration: '3:21', videoId: 'fRh_vgS2dFE' }
       ],
-      trackIndex: 0
+      fallbackIndex: 0,
+      queue: [],
+      nowPlaying: null
     },
     {
       id: 'room-3',
       name: 'Bounce Room',
       listeners: 31,
-      likes: 20,
-      dislikes: 4,
       chat: ['🔥', '😤', '🕺'],
-      tracks: [
-        { title: 'Crush Mode', artist: 'DYN-4', duration: '2:43' },
-        { title: 'Tilt Shift', artist: 'Vector Bloom', duration: '3:08' }
+      fallbackTracks: [
+        { title: 'Crush Mode', artist: 'DYN-4', duration: '2:43', videoId: '09R8_2nJtjg' },
+        { title: 'Tilt Shift', artist: 'Vector Bloom', duration: '3:08', videoId: 'hT_nvWreIhg' }
       ],
-      trackIndex: 0
+      fallbackIndex: 0,
+      queue: [],
+      nowPlaying: null
     }
   ],
   friends: ['Ari', 'Mina', 'Dev', 'Sam', 'Luca', 'Rin']
@@ -63,9 +63,91 @@ const dislikeBtn = document.getElementById('dislike-btn');
 const chatLog = document.getElementById('chat-log');
 const chatForm = document.getElementById('chat-form');
 const emojiInput = document.getElementById('emoji-input');
+const queueForm = document.getElementById('queue-form');
+const queueInput = document.getElementById('queue-input');
+const queueList = document.getElementById('queue-list');
+const playerFrameContainer = document.getElementById('embed-frame');
+const youtubePlayer = document.getElementById('youtube-player');
+const emptyState = document.getElementById('empty-state');
+const playOverlay = document.getElementById('play-overlay');
 
 function getActiveRoom() {
   return appState.rooms.find((room) => room.id === appState.activeRoomId);
+}
+
+function getEmbedUrl(videoId, autoplay = true) {
+  const autoplayFlag = autoplay ? '1' : '0';
+  return `https://www.youtube.com/embed/${videoId}?autoplay=${autoplayFlag}&mute=0&playsinline=1`;
+}
+
+function extractVideoId(rawInput) {
+  const input = rawInput.trim();
+  if (!input) {
+    return null;
+  }
+
+  if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {
+    return input;
+  }
+
+  try {
+    const url = new URL(input);
+    const host = url.hostname.replace('www.', '');
+
+    if (host === 'youtu.be') {
+      const id = url.pathname.replace('/', '').trim();
+      return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+    }
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const watchId = url.searchParams.get('v');
+      if (watchId && /^[a-zA-Z0-9_-]{11}$/.test(watchId)) {
+        return watchId;
+      }
+
+      if (url.pathname.startsWith('/embed/')) {
+        const id = url.pathname.split('/embed/')[1]?.split('/')[0];
+        return /^[a-zA-Z0-9_-]{11}$/.test(id) ? id : null;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function createTrackFromVideoId(videoId) {
+  return {
+    id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    videoId,
+    title: `YouTube track ${videoId}`,
+    artist: 'Queued by DJ',
+    duration: 'Unknown',
+    likes: 0,
+    dislikes: 0
+  };
+}
+
+function promoteToNowPlaying(room, nextItem, sourceLabel) {
+  room.nowPlaying = {
+    ...nextItem,
+    likes: nextItem.likes ?? 0,
+    dislikes: nextItem.dislikes ?? 0
+  };
+  room.chat.push(`DJ: ▶️ ${sourceLabel}`);
+}
+
+function playNextForRoom(room) {
+  if (room.queue.length > 0) {
+    const queueItem = room.queue.shift();
+    promoteToNowPlaying(room, queueItem, `Now playing ${queueItem.title}`);
+    return;
+  }
+
+  const fallback = room.fallbackTracks[room.fallbackIndex];
+  room.fallbackIndex = (room.fallbackIndex + 1) % room.fallbackTracks.length;
+  promoteToNowPlaying(room, fallback, `Fallback track ${fallback.title}`);
 }
 
 function renderRooms() {
@@ -100,14 +182,72 @@ function renderFriends() {
 
 function renderTrackPanel() {
   const activeRoom = getActiveRoom();
-  const activeTrack = activeRoom.tracks[activeRoom.trackIndex];
+  const currentTrack = activeRoom.nowPlaying;
 
   roomName.textContent = activeRoom.name;
-  trackTitle.textContent = activeTrack.title;
-  trackMeta.textContent = `${activeTrack.artist} • ${activeTrack.duration}`;
   listenersCount.textContent = activeRoom.listeners;
-  likesCount.textContent = activeRoom.likes;
-  dislikesCount.textContent = activeRoom.dislikes;
+
+  if (!currentTrack) {
+    trackTitle.textContent = 'Nothing live yet';
+    trackMeta.textContent = 'Queue a YouTube link to start the room vibe.';
+    likesCount.textContent = '0';
+    dislikesCount.textContent = '0';
+    likeBtn.disabled = true;
+    dislikeBtn.disabled = true;
+    playerFrameContainer.hidden = true;
+    emptyState.hidden = false;
+    return;
+  }
+
+  trackTitle.textContent = currentTrack.title;
+  trackMeta.textContent = `${currentTrack.artist} • ${currentTrack.duration}`;
+  likesCount.textContent = currentTrack.likes;
+  dislikesCount.textContent = currentTrack.dislikes;
+  likeBtn.disabled = false;
+  dislikeBtn.disabled = false;
+  emptyState.hidden = true;
+  playerFrameContainer.hidden = false;
+  youtubePlayer.src = getEmbedUrl(currentTrack.videoId, true);
+  playOverlay.hidden = false;
+}
+
+function renderQueue() {
+  const activeRoom = getActiveRoom();
+  queueList.innerHTML = '';
+
+  if (activeRoom.queue.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'queue-empty';
+    empty.textContent = 'Queue is empty. Paste a YouTube link to add tracks.';
+    queueList.appendChild(empty);
+    return;
+  }
+
+  activeRoom.queue.forEach((track, index) => {
+    const item = document.createElement('li');
+    item.className = 'queue-item';
+
+    const thumb = document.createElement('img');
+    thumb.src = `https://img.youtube.com/vi/${track.videoId}/mqdefault.jpg`;
+    thumb.alt = `${track.title} thumbnail`;
+    thumb.className = 'queue-thumb';
+
+    const content = document.createElement('div');
+    content.className = 'queue-copy';
+    content.innerHTML = `<strong>${track.title}</strong><small>${track.videoId}</small>`;
+
+    const playBtn = document.createElement('button');
+    playBtn.type = 'button';
+    playBtn.textContent = index === 0 ? 'Play next' : 'Play now';
+    playBtn.addEventListener('click', () => {
+      const [selected] = activeRoom.queue.splice(index, 1);
+      promoteToNowPlaying(activeRoom, selected, `Now playing ${selected.title}`);
+      render();
+    });
+
+    item.append(thumb, content, playBtn);
+    queueList.appendChild(item);
+  });
 }
 
 function renderRole() {
@@ -135,6 +275,7 @@ function render() {
   renderRooms();
   renderFriends();
   renderTrackPanel();
+  renderQueue();
   renderRole();
   renderChat();
 }
@@ -150,15 +291,56 @@ nextTrackButton.addEventListener('click', () => {
   }
 
   const activeRoom = getActiveRoom();
-  activeRoom.trackIndex = (activeRoom.trackIndex + 1) % activeRoom.tracks.length;
-  activeRoom.chat.push('DJ: ⏭️ Next track queued');
-  renderTrackPanel();
+  playNextForRoom(activeRoom);
+  render();
+});
+
+queueForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+
+  if (!appState.isDJ) {
+    return;
+  }
+
+  const videoId = extractVideoId(queueInput.value);
+  if (!videoId) {
+    queueInput.setCustomValidity('Enter a valid YouTube link or video ID.');
+    queueInput.reportValidity();
+    return;
+  }
+
+  queueInput.setCustomValidity('');
+  const activeRoom = getActiveRoom();
+  const track = createTrackFromVideoId(videoId);
+  activeRoom.queue.push(track);
+  activeRoom.chat.push(`DJ: ➕ queued ${videoId}`);
+  queueInput.value = '';
+  renderQueue();
   renderChat();
+});
+
+playOverlay.addEventListener('click', () => {
+  const activeRoom = getActiveRoom();
+  if (!activeRoom.nowPlaying) {
+    return;
+  }
+
+  youtubePlayer.src = getEmbedUrl(activeRoom.nowPlaying.videoId, false);
+  youtubePlayer.focus();
+  playOverlay.hidden = true;
+});
+
+youtubePlayer.addEventListener('load', () => {
+  playOverlay.hidden = false;
 });
 
 likeBtn.addEventListener('click', () => {
   const activeRoom = getActiveRoom();
-  activeRoom.likes += 1;
+  if (!activeRoom.nowPlaying) {
+    return;
+  }
+
+  activeRoom.nowPlaying.likes += 1;
   activeRoom.chat.push('You: 👍');
   renderTrackPanel();
   renderChat();
@@ -166,7 +348,11 @@ likeBtn.addEventListener('click', () => {
 
 dislikeBtn.addEventListener('click', () => {
   const activeRoom = getActiveRoom();
-  activeRoom.dislikes += 1;
+  if (!activeRoom.nowPlaying) {
+    return;
+  }
+
+  activeRoom.nowPlaying.dislikes += 1;
   activeRoom.chat.push('You: 👎');
   renderTrackPanel();
   renderChat();
