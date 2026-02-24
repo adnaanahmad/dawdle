@@ -43,6 +43,16 @@
           <h2 id="track-title"></h2>
           <p id="track-meta" class="track-meta"></p>
 
+          <div id="player-shell" class="embed-shell">
+            <div class="embed-frame" id="embed-frame" hidden>
+              <iframe id="youtube-player" title="Now Playing video" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+              <button id="play-overlay" class="play-overlay" type="button" hidden>▶ Click to play</button>
+            </div>
+            <div id="empty-state" class="empty-state">
+              <p>No track playing — DJ add to queue</p>
+            </div>
+          </div>
+
           <div class="vote-row">
             <button id="like-btn" class="vote like" type="button">👍 Like</button>
             <button id="dislike-btn" class="vote dislike" type="button">👎 Skip</button>
@@ -57,8 +67,14 @@
 
         <section class="dj-panel" id="dj-panel" aria-label="DJ controls" hidden>
           <h3>DJ controls</h3>
-          <p>Queue the next mock track in this room.</p>
-          <button id="next-track" type="button">Play next track</button>
+          <p>Paste a YouTube link to add to this room queue.</p>
+          <form id="queue-form" class="queue-form">
+            <label for="queue-input" class="sr-only">YouTube link</label>
+            <input id="queue-input" type="url" placeholder="https://www.youtube.com/watch?v=..." required />
+            <button type="submit">Add to queue</button>
+          </form>
+          <button id="next-track" type="button">Play next</button>
+          <ul id="queue-list" class="queue-list"></ul>
         </section>
       </main>
 
