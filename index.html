@@ -9,7 +9,7 @@
   <body>
     <div class="app-shell">
       <aside class="panel sidebar" aria-label="Rooms and friends">
-        <header class="panel-header">
+        <header class="panel-header brand-header">
           <h1>Dawdle</h1>
           <p>music rooms</p>
         </header>
@@ -31,17 +31,31 @@
 
       <main class="panel player" aria-label="Current track and controls">
         <header class="player-header">
-          <p class="eyebrow">Now playing</p>
-          <div class="role-toggle">
-            <span id="role-label">Listener</span>
-            <button id="toggle-dj" type="button" aria-pressed="false">Become DJ</button>
+          <div>
+            <p class="eyebrow">Now playing</p>
+            <p id="room-name" class="room-name"></p>
+          </div>
+          <div class="header-actions">
+            <button id="chat-drawer-toggle" class="chat-toggle" type="button" aria-expanded="false">💬 Chat</button>
+            <div class="role-toggle">
+              <span id="role-label">Listener</span>
+              <button id="toggle-dj" type="button" aria-pressed="false">Become DJ</button>
+            </div>
           </div>
         </header>
 
         <section class="track-card">
-          <p id="room-name" class="room-name"></p>
-          <h2 id="track-title"></h2>
-          <p id="track-meta" class="track-meta"></p>
+          <div class="track-showcase">
+            <div class="track-copy">
+              <h2 id="track-title"></h2>
+              <p id="track-meta" class="track-meta"></p>
+            </div>
+            <div class="album-art" aria-hidden="true">
+              <div class="album-art-inner">
+                <span>Album Art</span>
+              </div>
+            </div>
+          </div>
 
           <div class="vote-row">
             <button id="like-btn" class="vote like" type="button">👍 Like</button>
@@ -62,7 +76,7 @@
         </section>
       </main>
 
-      <aside class="panel chat" aria-label="Emoji chat panel">
+      <aside class="panel chat" aria-label="Emoji chat panel" id="chat-panel">
         <header class="panel-header">
           <h2>Emoji chat</h2>
           <p>Room reactions</p>
@@ -83,6 +97,9 @@
           <button type="submit">Send</button>
         </form>
       </aside>
+
+      <button id="chat-close" class="chat-close" type="button" aria-label="Close chat">×</button>
+      <div id="chat-backdrop" class="chat-backdrop" hidden></div>
     </div>
 
     <script src="script.js"></script>
